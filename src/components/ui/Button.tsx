@@ -1,21 +1,23 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
-type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+type Variant = 'primary' | 'secondary' | 'dark' | 'danger' | 'ghost' | 'outline' | 'outline-white';
 type Size = 'sm' | 'md' | 'lg';
 
 const variantClasses: Record<Variant, string> = {
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm',
-  secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-  danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm',
-  ghost: 'hover:bg-gray-100 text-gray-700',
-  outline: 'border border-gray-300 hover:bg-gray-50 text-gray-700 bg-white',
+  primary: 'bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white shadow-md shadow-brand-500/25 focus:ring-brand-400',
+  secondary: 'bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 focus:ring-slate-400',
+  dark: 'bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white shadow-md focus:ring-slate-700',
+  danger: 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white shadow-sm focus:ring-rose-400',
+  ghost: 'hover:bg-slate-100 text-slate-700 focus:ring-slate-400',
+  outline: 'border border-slate-200 hover:border-brand-500 hover:text-brand-600 text-slate-700 bg-white focus:ring-brand-400',
+  'outline-white': 'border-2 border-white/80 hover:bg-white hover:text-slate-900 text-white backdrop-blur-sm focus:ring-white/50',
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
+  sm: 'px-3 py-1.5 text-xs font-medium rounded-lg',
+  md: 'px-4 py-2 text-sm font-semibold rounded-xl',
+  lg: 'px-6 py-3 text-base font-semibold rounded-xl',
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -38,11 +40,11 @@ export default function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       disabled={disabled || loading}
       {...props}
     >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : icon}
+      {loading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : icon}
       {children}
     </button>
   );

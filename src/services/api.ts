@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type {
-  StudentProfile, RecruiterProfile, Job, Application,
-  Feedback, Institution, Department, Profile,
+  StudentProfile, RecruiterProfile, Job,
   ApplicationStatus, JobStatus, UserRole
 } from '../lib/supabase';
 

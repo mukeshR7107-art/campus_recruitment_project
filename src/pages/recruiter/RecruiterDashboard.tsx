@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, Users, TrendingUp, Plus, ArrowRight, Clock } from 'lucide-react';
+import { Briefcase, Users, TrendingUp, Plus, ArrowRight, Clock, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getJobsByRecruiter, getJobApplications, getRecruiterProfile } from '../../services/api';
 import { Job, RecruiterProfile } from '../../lib/supabase';
@@ -38,50 +38,71 @@ export default function RecruiterDashboard() {
   const openJobs = jobs.filter(j => j.status === 'OPEN').length;
   const closedJobs = jobs.filter(j => j.status === 'CLOSED').length;
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              {profile?.company_name ? `${profile.company_name} Dashboard` : 'Recruiter Dashboard'}
+      <div className="space-y-8">
+        
+        {/* Welcome Header */}
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl border border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="relative z-10 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 bg-brand-500/20 border border-brand-500/40 text-brand-400 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">
+              <Building2 className="w-3.5 h-3.5" /> Recruiter Management Portal
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight">
+              {profile?.company_name ? `${profile.company_name} Workspace` : 'Recruiter Dashboard'}
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">Manage your job postings and track candidates.</p>
+            <p className="text-slate-300 text-sm mt-2 leading-relaxed">
+              Manage your campus vacancies, review incoming applicant credentials, and evaluate students.
+            </p>
           </div>
-          {!profile?.company_name && (
-            <Link to="/recruiter/profile" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors">
-              Complete Profile <ArrowRight className="w-3 h-3" />
+
+          <div className="relative z-10 flex items-center gap-3 shrink-0">
+            <Link
+              to="/recruiter/jobs"
+              className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md shadow-brand-500/25"
+            >
+              <Plus className="w-4 h-4" /> Post New Job
             </Link>
-          )}
+          </div>
+          <div className="absolute right-0 top-0 bottom-0 w-80 bg-brand-500/10 blur-3xl pointer-events-none rounded-full" />
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Jobs" value={jobs.length} icon={<Briefcase className="w-5 h-5" />} color="blue" />
-          <StatCard title="Open Positions" value={openJobs} icon={<TrendingUp className="w-5 h-5" />} color="emerald" trend="Currently hiring" />
-          <StatCard title="Closed Jobs" value={closedJobs} icon={<Briefcase className="w-5 h-5" />} color="amber" />
-          <StatCard title="Total Applicants" value={totalApplicants} icon={<Users className="w-5 h-5" />} color="rose" />
+        {/* Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard title="Total Jobs Posted" value={jobs.length} icon={<Briefcase className="w-5 h-5" />} color="brand" />
+          <StatCard title="Active Openings" value={openJobs} icon={<TrendingUp className="w-5 h-5" />} color="emerald" trend="Accepting applications" />
+          <StatCard title="Closed Archives" value={closedJobs} icon={<Briefcase className="w-5 h-5" />} color="amber" />
+          <StatCard title="Total Applicants" value={totalApplicants} icon={<Users className="w-5 h-5" />} color="blue" />
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Job listings */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          
+          {/* Job Listings Column */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader
-                title="Your Job Postings"
-                subtitle={`${jobs.length} total`}
+                title="Active Campus Postings"
+                subtitle={`${jobs.length} total vacancies`}
                 action={
-                  <div className="flex items-center gap-2">
-                    <Link to="/recruiter/jobs" className="text-xs text-blue-600 font-medium hover:text-blue-700">
-                      Manage all
-                    </Link>
-                  </div>
+                  <Link to="/recruiter/jobs" className="text-xs text-brand-600 font-bold hover:text-brand-700 inline-flex items-center gap-1">
+                    Manage all <ArrowRight className="w-3 h-3" />
+                  </Link>
                 }
               />
               {jobs.length === 0 ? (
                 <EmptyState
                   title="No job postings yet"
-                  description="Create your first job posting to start receiving applications."
+                  description="Publish your first campus placement vacancy to start receiving verified student applications."
                   action={
                     <Link to="/recruiter/jobs">
                       <Button size="sm" icon={<Plus className="w-4 h-4" />}>Post a Job</Button>
@@ -91,16 +112,16 @@ export default function RecruiterDashboard() {
               ) : (
                 <div className="space-y-3">
                   {jobs.slice(0, 5).map(job => (
-                    <div key={job.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div key={job.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition-colors">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{job.title}</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3" />
-                          {new Date(job.created_at).toLocaleDateString()}
+                        <p className="text-sm font-bold text-slate-900">{job.title}</p>
+                        <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          Posted on {new Date(job.created_at).toLocaleDateString()}
                           {job.location ? ` · ${job.location}` : ''}
                         </p>
                       </div>
-                      <Badge variant={job.status === 'OPEN' ? 'success' : 'neutral'}>{job.status}</Badge>
+                      <Badge variant={job.status === 'OPEN' ? 'brand' : 'neutral'}>{job.status}</Badge>
                     </div>
                   ))}
                 </div>
@@ -108,57 +129,58 @@ export default function RecruiterDashboard() {
             </Card>
           </div>
 
-          {/* Quick actions */}
-          <div className="space-y-4">
+          {/* Quick Shortcuts & Company Card */}
+          <div className="space-y-6">
             <Card>
-              <CardHeader title="Quick Actions" />
+              <CardHeader title="Recruiter Actions" />
               <div className="space-y-2">
-                <Link to="/recruiter/jobs" className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-gray-50 text-sm text-gray-700 font-medium transition-colors">
-                  <Plus className="w-4 h-4 text-emerald-500" />
-                  Post New Job
-                  <ArrowRight className="w-3 h-3 ml-auto text-gray-400" />
+                <Link to="/recruiter/jobs" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
+                  <Plus className="w-4 h-4 text-brand-600" />
+                  <span>Create New Job Post</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-auto text-slate-400" />
                 </Link>
-                <Link to="/recruiter/applicants" className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-gray-50 text-sm text-gray-700 font-medium transition-colors">
-                  <Users className="w-4 h-4 text-blue-500" />
-                  View All Applicants
-                  <ArrowRight className="w-3 h-3 ml-auto text-gray-400" />
+                <Link to="/recruiter/applicants" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
+                  <Users className="w-4 h-4 text-sky-600" />
+                  <span>Review Applicant Pipeline</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-auto text-slate-400" />
                 </Link>
-                <Link to="/recruiter/profile" className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-gray-50 text-sm text-gray-700 font-medium transition-colors">
-                  <Briefcase className="w-4 h-4 text-amber-500" />
-                  Company Profile
-                  <ArrowRight className="w-3 h-3 ml-auto text-gray-400" />
+                <Link to="/recruiter/profile" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
+                  <Building2 className="w-4 h-4 text-amber-600" />
+                  <span>Update Company Profile</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-auto text-slate-400" />
                 </Link>
               </div>
             </Card>
 
             <Card>
-              <CardHeader title="Company Info" />
+              <CardHeader title="Company Details" />
               {profile ? (
-                <div className="space-y-2 text-sm">
+                <div className="space-y-3 text-xs">
                   <div>
-                    <p className="text-xs text-gray-500">Company</p>
-                    <p className="font-medium text-gray-900">{profile.company_name || '—'}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Organization</p>
+                    <p className="font-bold text-slate-900 mt-0.5 text-sm">{profile.company_name || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Designation</p>
-                    <p className="font-medium text-gray-900">{profile.designation || '—'}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Designation</p>
+                    <p className="font-semibold text-slate-700 mt-0.5">{profile.designation || '—'}</p>
                   </div>
                   {profile.company_website && (
                     <div>
-                      <p className="text-xs text-gray-500">Website</p>
-                      <a href={profile.company_website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs truncate block">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Website</p>
+                      <a href={profile.company_website} target="_blank" rel="noopener noreferrer" className="text-brand-600 font-semibold hover:underline truncate block mt-0.5">
                         {profile.company_website}
                       </a>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">
-                  <Link to="/recruiter/profile" className="text-blue-600 hover:underline">Set up your company profile</Link> to get started.
+                <p className="text-xs text-slate-500">
+                  <Link to="/recruiter/profile" className="text-brand-600 font-bold hover:underline">Set up your company profile</Link> to boost trust.
                 </p>
               )}
             </Card>
           </div>
+
         </div>
       </div>
     </DashboardLayout>

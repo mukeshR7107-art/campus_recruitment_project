@@ -1,5 +1,5 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { User, Phone, BookOpen, Star, Link as LinkIcon, Save } from 'lucide-react';
+import { User, Phone, Star, Link as LinkIcon, Save, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getStudentProfile, upsertStudentProfile, getDepartments } from '../../services/api';
 import { StudentProfile, Department } from '../../lib/supabase';
@@ -46,7 +46,7 @@ export default function StudentProfilePage() {
 
     setSaving(false);
     if (err) {
-      setError('Failed to save profile. Please try again.');
+      setError('Failed to save profile. Please verify your information and try again.');
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -64,7 +64,7 @@ export default function StudentProfilePage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full" />
         </div>
       </DashboardLayout>
     );
@@ -72,52 +72,57 @@ export default function StudentProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl space-y-6">
+      <div className="max-w-4xl space-y-8">
+        
         <div>
-          <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Keep your profile up to date to improve your chances.</p>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Student Candidate Profile</h1>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1">
+            Keep your profile comprehensive and accurate to maximize your shortlisting chances with corporate recruiters.
+          </p>
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
+          
           {/* Personal Info */}
           <Card>
             <CardHeader
-              title="Personal Information"
-              subtitle="Basic details visible to recruiters"
+              title="Academic & Personal Information"
+              subtitle="Core details displayed on your recruiter application card"
             />
             <div className="grid sm:grid-cols-2 gap-4">
               <Input
                 label="Full Name"
-                placeholder="Arjun Mehta"
+                placeholder="e.g. Alex Morgan"
                 value={profile.full_name ?? ''}
                 onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
                 icon={<User className="w-4 h-4" />}
+                required
               />
               <Input
-                label="Phone"
+                label="Contact Phone"
                 type="tel"
-                placeholder="+1 555 000 0000"
+                placeholder="+1 555 019 2834"
                 value={profile.phone ?? ''}
                 onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
                 icon={<Phone className="w-4 h-4" />}
               />
               <Select
-                label="Department"
+                label="Academic Department / Major"
                 value={profile.department_id ?? ''}
                 onChange={e => setProfile(p => ({ ...p, department_id: Number(e.target.value) || null }))}
                 options={departments.map(d => ({
                   value: d.id,
                   label: `${d.name}${(d as any).institutions?.name ? ` — ${(d as any).institutions.name}` : ''}`,
                 }))}
-                placeholder="Select department"
+                placeholder="Select your department..."
               />
               <Input
-                label="CGPA / GPA"
+                label="CGPA / Cumulative Grade"
                 type="number"
                 min="0"
                 max="10"
                 step="0.01"
-                placeholder="8.5"
+                placeholder="8.75"
                 value={profile.cgpa ?? ''}
                 onChange={e => setProfile(p => ({ ...p, cgpa: Number(e.target.value) }))}
                 icon={<Star className="w-4 h-4" />}
@@ -125,72 +130,79 @@ export default function StudentProfilePage() {
             </div>
           </Card>
 
-          {/* Skills */}
+          {/* Skills with Live Score */}
           <Card>
             <CardHeader
-              title="Skills"
-              subtitle="Comma-separated list (e.g., React, Node.js, Python)"
+              title="Technical Skills & Competencies"
+              subtitle="Comma-separated keywords (e.g. React, Node.js, Python, PostgreSQL, AWS)"
             />
             <Textarea
-              placeholder="React, Node.js, Python, SQL, Git, Docker..."
+              placeholder="React, TypeScript, Python, Tailwind CSS, Docker, GraphQL, System Design..."
               value={profile.skills ?? ''}
               onChange={e => setProfile(p => ({ ...p, skills: e.target.value }))}
               rows={3}
-              hint="Separate skills with commas for best results."
+              hint="Enter skills separated with commas. These are parsed for recruiter keyword matching."
             />
 
-            {/* Live score */}
-            <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+            {/* Live resume score widget */}
+            <div className="mt-5 p-4 bg-brand-50/60 rounded-2xl border border-brand-200/80">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-blue-800">Estimated Resume Score</span>
-                <span className="text-lg font-bold text-blue-700">{estimatedScore}/100</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-brand-800 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-brand-600" /> Automated Resume Score
+                </span>
+                <span className="text-lg font-extrabold text-brand-700">{estimatedScore}/100</span>
               </div>
-              <div className="h-2 bg-blue-200 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-brand-200/60 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                  className="h-full bg-brand-500 rounded-full transition-all duration-500"
                   style={{ width: `${estimatedScore}%` }}
                 />
               </div>
-              <p className="text-xs text-blue-600 mt-1.5">
-                {estimatedScore >= 80 ? 'Excellent! You have a strong skill set.' :
-                 estimatedScore >= 60 ? 'Good profile. Add more relevant skills to improve.' :
-                 'Add more skills to boost your score and visibility.'}
+              <p className="text-xs text-brand-700 mt-2 font-medium">
+                {estimatedScore >= 80 ? '🌟 Outstanding profile readiness! Recruiters will prioritize your profile.' :
+                 estimatedScore >= 60 ? '✨ Good candidate profile. Consider adding a few more specific tools.' :
+                 '💡 Add more technical skills and frameworks to optimize your matching score.'}
               </p>
             </div>
           </Card>
 
-          {/* Resume URL */}
+          {/* Resume Link */}
           <Card>
             <CardHeader
-              title="Resume"
-              subtitle="Link to your resume (Google Drive, Dropbox, etc.)"
+              title="Online Portfolio & Resume"
+              subtitle="Public link to your resume document (Google Drive, Dropbox, Notion, or PDF link)"
             />
             <Input
-              label="Resume URL"
+              label="Public Resume Link"
               type="url"
-              placeholder="https://drive.google.com/file/d/..."
+              placeholder="https://drive.google.com/file/d/... or https://portfolio.dev"
               value={profile.resume_url ?? ''}
               onChange={e => setProfile(p => ({ ...p, resume_url: e.target.value }))}
               icon={<LinkIcon className="w-4 h-4" />}
-              hint="Make sure the link is publicly accessible."
+              hint="Ensure permissions are set to 'Anyone with the link can view'."
             />
           </Card>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
               {error}
             </div>
           )}
 
           {saved && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-lg">
-              Profile saved successfully!
+            <div className="bg-brand-50 border border-brand-200 text-brand-800 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-brand-600" /> Profile saved and synced successfully!
             </div>
           )}
 
-          <div className="flex justify-end">
-            <Button type="submit" loading={saving} icon={<Save className="w-4 h-4" />}>
-              Save Profile
+          <div className="flex justify-end pt-2">
+            <Button
+              type="submit"
+              loading={saving}
+              icon={<Save className="w-4 h-4" />}
+              className="px-6 py-2.5 font-bold uppercase tracking-wider text-xs"
+            >
+              Save Profile Changes
             </Button>
           </div>
         </form>

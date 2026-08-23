@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, Briefcase, Users } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, Briefcase, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
@@ -10,26 +10,23 @@ interface RoleOption {
   label: string;
   desc: string;
   icon: React.ReactNode;
-  color: string;
-  active: string;
+  activeClass: string;
 }
 
 const roleOptions: RoleOption[] = [
   {
     role: 'STUDENT',
-    label: 'Student',
-    desc: 'Looking for placement opportunities',
-    icon: <GraduationCap className="w-5 h-5" />,
-    color: 'border-gray-200 hover:border-blue-300',
-    active: 'border-blue-500 bg-blue-50',
+    label: 'Student / Candidate',
+    desc: 'Apply for campus placements and track jobs',
+    icon: <GraduationCap className="w-5 h-5 text-brand-600" />,
+    activeClass: 'border-brand-500 bg-brand-50/50 ring-2 ring-brand-500/20',
   },
   {
     role: 'RECRUITER',
-    label: 'Recruiter',
-    desc: 'Hiring campus talent',
-    icon: <Briefcase className="w-5 h-5" />,
-    color: 'border-gray-200 hover:border-emerald-300',
-    active: 'border-emerald-500 bg-emerald-50',
+    label: 'Recruiter / Employer',
+    desc: 'Post jobs & review applicant pipelines',
+    icon: <Briefcase className="w-5 h-5 text-sky-600" />,
+    activeClass: 'border-sky-500 bg-sky-50/50 ring-2 ring-sky-500/20',
   },
 ];
 
@@ -81,57 +78,92 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      
+      {/* Background Graphic Accents */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-brand-500/10 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-sky-500/10 blur-3xl pointer-events-none rounded-full" />
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        
+        {/* Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-white" />
+          <Link to="/" className="inline-flex items-center gap-3 group mb-4">
+            <div className="w-12 h-12 bg-brand-500 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/25 group-hover:scale-105 transition-transform">
+              <GraduationCap className="w-7 h-7 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">CampusRecruit</span>
+            <div className="text-left">
+              <div className="flex items-center gap-1">
+                <span className="text-2xl font-extrabold tracking-wider uppercase text-white">JobBoard</span>
+                <span className="w-2 h-2 rounded-full bg-brand-500 inline-block"></span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block -mt-1">Campus Recruitment</span>
+            </div>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-          <p className="text-gray-500 text-sm mt-1">Join thousands of students and recruiters</p>
+
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">
+            Create Your Account
+          </h2>
+          <p className="text-slate-400 text-sm mt-2">
+            Join thousands of students and recruiters on the campus network.
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-8">
+        {/* Card */}
+        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-slate-100 relative">
+          
           {success ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <GraduationCap className="w-8 h-8 text-emerald-600" />
+              <div className="w-16 h-16 bg-brand-100 border border-brand-200 rounded-2xl flex items-center justify-center mx-auto mb-4 text-brand-600">
+                <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Account Created!</h3>
-              <p className="text-sm text-gray-500">Check your inbox and confirm your email before signing in.</p>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Account Created!</h3>
+              <p className="text-sm text-slate-600 mb-6">
+                Please check your inbox and verify your email before logging in.
+              </p>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all"
+              >
+                Go to Sign In <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Role selector */}
+              
+              {/* Role Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Select Your Role
+                </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {roleOptions.map(opt => (
-                    <button
-                      key={opt.role}
-                      type="button"
-                      onClick={() => setRole(opt.role)}
-                      className={`flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 text-center transition-all
-                        ${role === opt.role ? opt.active : opt.color}`}
-                    >
-                      <div className={`p-2 rounded-lg ${role === opt.role ? 'bg-white/80' : 'bg-gray-100'}`}>
-                        {opt.icon}
-                      </div>
-                      <span className="text-sm font-semibold text-gray-900">{opt.label}</span>
-                      <span className="text-xs text-gray-500">{opt.desc}</span>
-                    </button>
-                  ))}
+                  {roleOptions.map(opt => {
+                    const isSelected = role === opt.role;
+                    return (
+                      <button
+                        key={opt.role}
+                        type="button"
+                        onClick={() => setRole(opt.role)}
+                        className={`flex flex-col items-start p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                          isSelected ? opt.activeClass : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                        }`}
+                      >
+                        <div className="p-2 rounded-xl bg-white shadow-xs mb-2">
+                          {opt.icon}
+                        </div>
+                        <span className="text-xs font-bold text-slate-900 leading-snug">{opt.label}</span>
+                        <span className="text-[11px] text-slate-500 mt-0.5 leading-tight">{opt.desc}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Email */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">Email address</label>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Email Address</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
@@ -139,17 +171,18 @@ export default function RegisterPage() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-white pl-9 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm"
                     autoComplete="email"
+                    required
                   />
                 </div>
               </div>
 
               {/* Password */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">Password</label>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
@@ -157,54 +190,70 @@ export default function RegisterPage() {
                     placeholder="Minimum 6 characters"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-white pl-9 pr-10 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-10 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm"
+                    required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw(v => !v)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                   >
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* Confirm */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">Confirm password</label>
+              {/* Confirm Password */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Confirm Password</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
                     type={showPw ? 'text' : 'password'}
-                    placeholder="Repeat your password"
+                    placeholder="Re-enter password"
                     value={confirm}
                     onChange={e => setConfirm(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-white pl-9 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm"
+                    required
                   />
                 </div>
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
                   {error}
                 </div>
               )}
 
-              <Button type="submit" loading={loading} className="w-full justify-center" size="lg">
-                Create Account
+              <Button
+                type="submit"
+                loading={loading}
+                className="w-full justify-center py-3 text-sm font-bold uppercase tracking-wider"
+                size="lg"
+              >
+                Create Account <ArrowRight className="w-4 h-4" />
               </Button>
             </form>
           )}
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-              Sign in
-            </Link>
-          </p>
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+            <p className="text-sm text-slate-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-brand-600 hover:text-brand-700 font-bold hover:underline">
+                Sign In
+              </Link>
+            </p>
+          </div>
+
         </div>
+
+        <div className="mt-6 text-center flex items-center justify-center gap-1.5 text-xs text-slate-500">
+          <ShieldCheck className="w-4 h-4 text-brand-500" />
+          <span>Role-based access & data privacy enforced</span>
+        </div>
+
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, MapPin, DollarSign, Clock, Building2 } from 'lucide-react';
+import { FileText, MapPin, DollarSign, Clock, Building2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getStudentApplications } from '../../services/api';
 import { Application } from '../../lib/supabase';
@@ -16,23 +16,23 @@ function StatusTimeline({ status }: { status: string }) {
   const currentIdx = statusSteps.indexOf(status as any);
 
   return (
-    <div className="flex items-center gap-1 mt-3">
+    <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-slate-100">
       {statusSteps.map((step, idx) => {
         const active = !rejected && idx <= currentIdx;
         const current = !rejected && idx === currentIdx;
         return (
-          <div key={step} className="flex items-center gap-1">
-            <div className={`h-1.5 rounded-full transition-all ${
-              rejected ? 'bg-red-200' :
-              active ? 'bg-blue-500' : 'bg-gray-200'
-            } ${idx === 0 || idx === statusSteps.length - 1 ? 'w-6' : 'w-10'}`} />
+          <div key={step} className="flex items-center gap-1.5">
+            <div className={`h-2 rounded-full transition-all duration-300 ${
+              rejected ? 'bg-rose-200' :
+              active ? 'bg-brand-500' : 'bg-slate-200'
+            } ${idx === 0 || idx === statusSteps.length - 1 ? 'w-8' : 'w-12'}`} />
             {current && (
-              <span className="text-[10px] font-medium text-blue-600 whitespace-nowrap">{step}</span>
+              <span className="text-[11px] font-bold text-brand-700 uppercase tracking-wider">{step}</span>
             )}
           </div>
         );
       })}
-      {rejected && <span className="text-[10px] font-medium text-red-600 whitespace-nowrap">REJECTED</span>}
+      {rejected && <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">REJECTED</span>}
     </div>
   );
 }
@@ -50,7 +50,7 @@ export default function StudentApplications() {
     }).finally(() => setLoading(false));
   }, [user]);
 
-  const statusOptions = ['ALL', 'APPLIED', 'REVIEWED', 'SHORTLISTED', 'REJECTED', 'HIRED'];
+  const statusOptions = ['ALL', 'APPLIED', 'REVIEWED', 'SHORTLISTED', 'HIRED', 'REJECTED'];
   const filtered = filter === 'ALL' ? applications : applications.filter(a => a.status === filter);
 
   const counts = applications.reduce<Record<string, number>>((acc, a) => {
@@ -62,7 +62,7 @@ export default function StudentApplications() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full" />
         </div>
       </DashboardLayout>
     );
@@ -70,22 +70,32 @@ export default function StudentApplications() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">My Applications</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{applications.length} total applications</p>
+      <div className="space-y-8">
+        
+        {/* Title Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">My Job Applications</h1>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">Track real-time candidate progression and recruiter reviews.</p>
+          </div>
+          <Link
+            to="/student/jobs"
+            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-sm"
+          >
+            Explore More Jobs <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Summary chips */}
+        {/* Status Filter Chips */}
         <div className="flex flex-wrap gap-2">
           {statusOptions.map(s => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                 filter === s
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
               {s}{s !== 'ALL' && counts[s] ? ` (${counts[s]})` : ''}
@@ -93,15 +103,16 @@ export default function StudentApplications() {
           ))}
         </div>
 
+        {/* Applications List */}
         {filtered.length === 0 ? (
           <EmptyState
-            title="No applications"
-            description={filter === 'ALL' ? "You haven't applied to any jobs yet." : `No applications with status "${filter}".`}
-            icon={<FileText className="w-8 h-8" />}
+            title="No applications in this view"
+            description={filter === 'ALL' ? "You haven't submitted any job applications yet." : `No applications found with status "${filter}".`}
+            icon={<FileText className="w-8 h-8 text-slate-400" />}
             action={
               filter === 'ALL' ? (
-                <Link to="/student/jobs" className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                  Browse Jobs →
+                <Link to="/student/jobs" className="text-xs font-bold text-brand-600 hover:underline">
+                  Browse Campus Jobs →
                 </Link>
               ) : undefined
             }
@@ -112,42 +123,44 @@ export default function StudentApplications() {
               const job = (app as any).jobs;
               const company = job?.recruiter_profiles?.company_name;
               return (
-                <Card key={app.id}>
+                <Card key={app.id} hoverEffect>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="font-semibold text-gray-900">{job?.title ?? 'Position'}</h3>
+                      <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
+                        <h3 className="font-bold text-slate-900 text-base">{job?.title ?? 'Position'}</h3>
                         <Badge variant={applicationStatusBadge(app.status)}>{app.status}</Badge>
                       </div>
                       {company && (
-                        <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
-                          <Building2 className="w-3.5 h-3.5" />
+                        <p className="text-xs font-semibold text-slate-500 flex items-center gap-1 mb-2.5">
+                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
                           {company}
                         </p>
                       )}
-                      <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                      <div className="flex flex-wrap gap-4 text-xs text-slate-500 font-medium">
                         {job?.location && (
                           <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />{job.location}
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" />{job.location}
                           </span>
                         )}
                         {job?.salary_package && (
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="w-3 h-3" />{job.salary_package}
+                          <span className="flex items-center gap-1 font-bold text-brand-700">
+                            <DollarSign className="w-3.5 h-3.5 text-brand-600" />{job.salary_package}
                           </span>
                         )}
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Applied {new Date(app.submitted_at).toLocaleDateString()}
+                        <span className="flex items-center gap-1 text-slate-400">
+                          <Clock className="w-3.5 h-3.5" />
+                          Submitted on {new Date(app.submitted_at).toLocaleDateString()}
                         </span>
                       </div>
                       <StatusTimeline status={app.status} />
                     </div>
                   </div>
                   {app.cover_letter && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-xs text-gray-500 font-medium mb-1">Your Cover Letter</p>
-                      <p className="text-xs text-gray-600 line-clamp-2">{app.cover_letter}</p>
+                    <div className="mt-3.5 pt-3 border-t border-slate-100">
+                      <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mb-1">Your Attached Cover Note</p>
+                      <p className="text-xs text-slate-600 leading-relaxed italic bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        "{app.cover_letter}"
+                      </p>
                     </div>
                   )}
                 </Card>
