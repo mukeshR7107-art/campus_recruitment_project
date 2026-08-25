@@ -186,7 +186,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex items-center gap-3">
             <Link
-              to="/"
+              to={role === 'STUDENT' ? '/student/jobs' : role === 'RECRUITER' ? '/recruiter/jobs' : '/admin'}
               className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100/70 px-3 py-1.5 rounded-lg border border-brand-200/80 transition-colors"
             >
               Browse Jobs <ChevronRight className="w-3.5 h-3.5" />

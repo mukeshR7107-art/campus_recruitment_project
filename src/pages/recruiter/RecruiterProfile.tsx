@@ -1,8 +1,9 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { Building2, User, Globe, Save, CheckCircle2 } from 'lucide-react';
+import { Building2, User, Globe, Save, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getRecruiterProfile, upsertRecruiterProfile } from '../../services/api';
 import { RecruiterProfile } from '../../lib/supabase';
+import { validateRecruiterProfileInput } from '../../lib/security/validation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card, { CardHeader } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -15,6 +16,7 @@ export default function RecruiterProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -27,6 +29,20 @@ export default function RecruiterProfilePage() {
     e.preventDefault();
     if (!user) return;
     setError('');
+    setFieldErrors({});
+
+    const validation = validateRecruiterProfileInput({
+      company_name: profile.company_name ?? '',
+      designation: profile.designation ?? '',
+      company_website: profile.company_website ?? '',
+    });
+
+    if (!validation.isValid) {
+      setError(validation.error ?? 'Please check the highlighted company details.');
+      setFieldErrors(validation.fieldErrors ?? {});
+      return;
+    }
+
     setSaving(true);
 
     const { error: err } = await upsertRecruiterProfile({
@@ -38,7 +54,7 @@ export default function RecruiterProfilePage() {
 
     setSaving(false);
     if (err) {
-      setError('Failed to update company profile. Please try again.');
+      setError(err.message ?? 'Failed to update company profile. Please try again.');
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -69,37 +85,57 @@ export default function RecruiterProfilePage() {
           <Card>
             <CardHeader title="Company & Representative Details" subtitle="Official branding details" />
             <div className="space-y-4">
-              <Input
-                label="Company / Enterprise Name"
-                placeholder="e.g. Acme Technologies Inc."
-                value={profile.company_name ?? ''}
-                onChange={e => setProfile(p => ({ ...p, company_name: e.target.value }))}
-                icon={<Building2 className="w-4 h-4" />}
-                required
-              />
-              <Input
-                label="Your Role / Designation"
-                placeholder="e.g. Lead Campus Recruiter, VP of Engineering"
-                value={profile.designation ?? ''}
-                onChange={e => setProfile(p => ({ ...p, designation: e.target.value }))}
-                icon={<User className="w-4 h-4" />}
-              />
-              <Input
-                label="Official Company Website"
-                type="url"
-                placeholder="https://www.company.com"
-                value={profile.company_website ?? ''}
-                onChange={e => setProfile(p => ({ ...p, company_website: e.target.value }))}
-                icon={<Globe className="w-4 h-4" />}
-              />
+              <div>
+                <Input
+                  label="Company / Enterprise Name *"
+                  placeholder="e.g. Acme Technologies Inc."
+                  value={profile.company_name ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, company_name: e.target.value }))}
+                  icon={<Building2 className="w-4 h-4" />}
+                  required
+                />
+                {fieldErrors.company_name && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.company_name}</p>
+                )}
+              </div>
+
+              <div>
+                <Input
+                  label="Your Role / Designation"
+                  placeholder="e.g. Lead Campus Recruiter, VP of Engineering"
+                  value={profile.designation ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, designation: e.target.value }))}
+                  icon={<User className="w-4 h-4" />}
+                />
+                {fieldErrors.designation && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.designation}</p>
+                )}
+              </div>
+
+              <div>
+                <Input
+                  label="Official Company Website"
+                  type="url"
+                  placeholder="https://www.company.com"
+                  value={profile.company_website ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, company_website: e.target.value }))}
+                  icon={<Globe className="w-4 h-4" />}
+                  hint="Strictly validated HTTP/HTTPS URL."
+                />
+                {fieldErrors.company_website && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.company_website}</p>
+                )}
+              </div>
             </div>
           </Card>
 
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
-              {error}
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
+
           {saved && (
             <div className="bg-brand-50 border border-brand-200 text-brand-800 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-brand-600" /> Company profile saved successfully!

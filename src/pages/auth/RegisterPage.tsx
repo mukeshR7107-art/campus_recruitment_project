@@ -1,8 +1,9 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, Briefcase, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, Briefcase, CheckCircle2, ArrowRight, ShieldCheck, Check, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../lib/supabase';
+import { validateEmail, validatePassword } from '../../lib/security/validation';
 import Button from '../../components/ui/Button';
 
 interface RoleOption {
@@ -43,29 +44,42 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  // Real-time password requirement checklist
+  const pwChecks = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password),
+  };
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
 
-    if (!email || !password || !confirm) {
-      setError('Please fill in all fields.');
+    const emailRes = validateEmail(email);
+    if (!emailRes.isValid) {
+      setError(emailRes.error!);
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+
+    const pwRes = validatePassword(password);
+    if (!pwRes.isValid) {
+      setError(pwRes.error!);
       return;
     }
+
     if (password !== confirm) {
       setError('Passwords do not match.');
       return;
     }
 
     setLoading(true);
-    const { error: err, emailConfirmationRequired } = await signUp(email, password, role);
+    const { error: err, emailConfirmationRequired } = await signUp(emailRes.sanitizedValue!, password, role);
     setLoading(false);
 
     if (err) {
-      setError(err.message ?? 'Registration failed. Please try again.');
+      setError(err.message ?? 'Registration failed. Please verify your details.');
       return;
     }
 
@@ -187,7 +201,7 @@ export default function RegisterPage() {
                   </div>
                   <input
                     type={showPw ? 'text' : 'password'}
-                    placeholder="Minimum 6 characters"
+                    placeholder="Min 8 chars with upper, lower, num, symbol"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-10 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm"
@@ -201,6 +215,30 @@ export default function RegisterPage() {
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+
+                {/* Password Strength Checklist */}
+                {password.length > 0 && (
+                  <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password Security Criteria:</p>
+                    <div className="grid grid-cols-2 gap-1 text-[11px]">
+                      <span className={`flex items-center gap-1 font-medium ${pwChecks.length ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {pwChecks.length ? <Check className="w-3 h-3 text-emerald-600" /> : <X className="w-3 h-3 text-slate-400" />} 8+ characters
+                      </span>
+                      <span className={`flex items-center gap-1 font-medium ${pwChecks.upper ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {pwChecks.upper ? <Check className="w-3 h-3 text-emerald-600" /> : <X className="w-3 h-3 text-slate-400" />} Uppercase (A-Z)
+                      </span>
+                      <span className={`flex items-center gap-1 font-medium ${pwChecks.lower ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {pwChecks.lower ? <Check className="w-3 h-3 text-emerald-600" /> : <X className="w-3 h-3 text-slate-400" />} Lowercase (a-z)
+                      </span>
+                      <span className={`flex items-center gap-1 font-medium ${pwChecks.number ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {pwChecks.number ? <Check className="w-3 h-3 text-emerald-600" /> : <X className="w-3 h-3 text-slate-400" />} Number (0-9)
+                      </span>
+                      <span className={`flex items-center gap-1 font-medium col-span-2 ${pwChecks.special ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {pwChecks.special ? <Check className="w-3 h-3 text-emerald-600" /> : <X className="w-3 h-3 text-slate-400" />} Special symbol (!@#$%^&*...)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Confirm Password */}
@@ -222,8 +260,9 @@ export default function RegisterPage() {
               </div>
 
               {error && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
-                  {error}
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
 
@@ -251,7 +290,7 @@ export default function RegisterPage() {
 
         <div className="mt-6 text-center flex items-center justify-center gap-1.5 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-brand-500" />
-          <span>Role-based access & data privacy enforced</span>
+          <span>Strict password complexity & role authorization enforced</span>
         </div>
 
       </div>

@@ -1,8 +1,9 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { Plus, Pencil, Trash2, MapPin, DollarSign, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, MapPin, DollarSign, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getJobsByRecruiter, createJob, updateJob, deleteJob } from '../../services/api';
 import { Job } from '../../lib/supabase';
+import { validateJobInput } from '../../lib/security/validation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -31,6 +32,7 @@ export default function ManageJobs() {
   const [deleteConfirm, setDeleteConfirm] = useState<Job | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   function loadJobs() {
     if (!user) return;
@@ -45,6 +47,7 @@ export default function ManageJobs() {
     setEditingJob(null);
     setForm(emptyForm);
     setError('');
+    setFieldErrors({});
     setModalOpen(true);
   }
 
@@ -59,25 +62,33 @@ export default function ManageJobs() {
       status: job.status,
     });
     setError('');
+    setFieldErrors({});
     setModalOpen(true);
   }
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
-    if (!user || !form.title.trim()) {
-      setError('Job title is required.');
+    if (!user) return;
+    setError('');
+    setFieldErrors({});
+
+    // Client-side schema validation
+    const validation = validateJobInput(form);
+    if (!validation.isValid) {
+      setError(validation.error ?? 'Please check the highlighted fields.');
+      setFieldErrors(validation.fieldErrors ?? {});
       return;
     }
-    setError('');
+
     setSaving(true);
 
     if (editingJob) {
       const { error: err } = await updateJob(editingJob.id, form);
-      if (err) setError('Failed to update job posting.');
+      if (err) setError(err.message ?? 'Failed to update job posting.');
       else { setModalOpen(false); loadJobs(); }
     } else {
       const { error: err } = await createJob({ ...form, recruiter_id: user.id });
-      if (err) setError('Failed to create job posting.');
+      if (err) setError(err.message ?? 'Failed to create job posting.');
       else { setModalOpen(false); loadJobs(); }
     }
     setSaving(false);
@@ -194,43 +205,73 @@ export default function ManageJobs() {
         maxWidth="lg"
       >
         <form onSubmit={handleSave} className="space-y-4">
-          <Input
-            label="Job Title *"
-            placeholder="e.g. Graduate Software Engineer"
-            value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            required
-          />
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div>
             <Input
-              label="Location"
-              placeholder="e.g. Bangalore / Hybrid / Remote"
-              value={form.location}
-              onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-              icon={<MapPin className="w-4 h-4" />}
+              label="Job Title *"
+              placeholder="e.g. Graduate Software Engineer"
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              required
             />
-            <Input
-              label="Salary / Package"
-              placeholder="e.g. $85,000 / yr or ₹12 LPA"
-              value={form.salary_package}
-              onChange={e => setForm(f => ({ ...f, salary_package: e.target.value }))}
-              icon={<DollarSign className="w-4 h-4" />}
-            />
+            {fieldErrors.title && (
+              <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.title}</p>
+            )}
           </div>
-          <Textarea
-            label="Job Description"
-            placeholder="Outline the role expectations, day-to-day responsibilities, and team culture..."
-            value={form.description}
-            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            rows={4}
-          />
-          <Textarea
-            label="Candidate Requirements & Tech Stack"
-            placeholder="List required skills, minimum CGPA, eligible departments..."
-            value={form.requirements}
-            onChange={e => setForm(f => ({ ...f, requirements: e.target.value }))}
-            rows={3}
-          />
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <Input
+                label="Location"
+                placeholder="e.g. Bangalore / Hybrid / Remote"
+                value={form.location}
+                onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                icon={<MapPin className="w-4 h-4" />}
+              />
+              {fieldErrors.location && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.location}</p>
+              )}
+            </div>
+
+            <div>
+              <Input
+                label="Salary / Package"
+                placeholder="e.g. $85,000 / yr or ₹12 LPA"
+                value={form.salary_package}
+                onChange={e => setForm(f => ({ ...f, salary_package: e.target.value }))}
+                icon={<DollarSign className="w-4 h-4" />}
+              />
+              {fieldErrors.salary_package && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.salary_package}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Textarea
+              label="Job Description"
+              placeholder="Outline the role expectations, day-to-day responsibilities, and team culture..."
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              rows={4}
+            />
+            {fieldErrors.description && (
+              <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.description}</p>
+            )}
+          </div>
+
+          <div>
+            <Textarea
+              label="Candidate Requirements & Tech Stack"
+              placeholder="List required skills, minimum CGPA, eligible departments..."
+              value={form.requirements}
+              onChange={e => setForm(f => ({ ...f, requirements: e.target.value }))}
+              rows={3}
+            />
+            {fieldErrors.requirements && (
+              <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.requirements}</p>
+            )}
+          </div>
+
           <Select
             label="Status"
             value={form.status}
@@ -242,8 +283,9 @@ export default function ManageJobs() {
           />
 
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
-              {error}
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 

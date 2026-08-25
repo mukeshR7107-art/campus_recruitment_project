@@ -1,7 +1,8 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { GraduationCap, Plus, MapPin, Search } from 'lucide-react';
+import { GraduationCap, Plus, MapPin, Search, AlertTriangle } from 'lucide-react';
 import { getInstitutions, createInstitution } from '../../services/api';
 import { Institution } from '../../lib/supabase';
+import { validateInstitutionInput } from '../../lib/security/validation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -29,18 +30,27 @@ export default function InstitutionManagement() {
   useEffect(() => { loadInstitutions(); }, []);
 
   useEffect(() => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     setFiltered(institutions.filter(i => i.name.toLowerCase().includes(q) || i.address.toLowerCase().includes(q)));
   }, [search, institutions]);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) { setError('Institution name is required.'); return; }
     setError('');
+
+    const validation = validateInstitutionInput(form);
+    if (!validation.isValid) {
+      setError(validation.error ?? 'Please provide a valid institution name.');
+      return;
+    }
+
     setSaving(true);
     const { error: err } = await createInstitution(form);
     setSaving(false);
-    if (err) { setError('Failed to register institution.'); return; }
+    if (err) {
+      setError(err.message ?? 'Failed to register institution.');
+      return;
+    }
     setModalOpen(false);
     setForm({ name: '', address: '' });
     loadInstitutions();
@@ -136,7 +146,10 @@ export default function InstitutionManagement() {
             icon={<MapPin className="w-4 h-4" />}
           />
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">{error}</div>
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
           )}
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
             <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>

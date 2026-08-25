@@ -1,7 +1,8 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Clock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { validateEmail } from '../../lib/security/validation';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cooldown, setCooldown] = useState<number>(0);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -23,19 +25,47 @@ export default function LoginPage() {
     }
   }, [user, role, navigate]);
 
+  // Handle countdown timer for rate limiting exponential backoff
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (cooldown > 0) return;
     setError('');
-    if (!email || !password) {
-      setError('Please enter both your email address and password.');
+
+    // Client-side strict email schema validation
+    const emailRes = validateEmail(email);
+    if (!emailRes.isValid) {
+      setError(emailRes.error!);
       return;
     }
+
+    if (!password || password.trim().length === 0) {
+      setError('Please enter your password.');
+      return;
+    }
+
     setLoading(true);
-    const { error: err } = await signIn(email, password);
+    const result = await signIn(email, password);
     setLoading(false);
 
-    if (err) {
-      setError(err.message ?? 'Invalid email or password. Please verify your credentials.');
+    if (result.error) {
+      setError(result.error.message ?? 'Invalid credentials. Please verify your details.');
+      if (result.retryAfterSeconds && result.retryAfterSeconds > 0) {
+        setCooldown(result.retryAfterSeconds);
+      }
       return;
     }
   }
@@ -75,6 +105,18 @@ export default function LoginPage() {
         {/* Login Card */}
         <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-slate-100 relative">
           
+          {cooldown > 0 && (
+            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 flex items-center gap-3 animate-pulse">
+              <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800">Security Exponential Backoff Active</p>
+                <p className="text-xs text-amber-700 mt-0.5 font-medium">
+                  Too many failed attempts. Retrying unlocked in <strong className="font-extrabold text-amber-900">{cooldown}s</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             
             <Input
@@ -86,6 +128,7 @@ export default function LoginPage() {
               icon={<Mail className="w-4 h-4" />}
               autoComplete="email"
               required
+              disabled={loading || cooldown > 0}
             />
 
             <div className="space-y-1.5">
@@ -101,14 +144,16 @@ export default function LoginPage() {
                   placeholder="Enter your secret password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-10 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm"
+                  className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-10 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
                   autoComplete="current-password"
                   required
+                  disabled={loading || cooldown > 0}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  disabled={loading || cooldown > 0}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -116,18 +161,20 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
-                {error}
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
             <Button
               type="submit"
               loading={loading}
+              disabled={cooldown > 0}
               className="w-full justify-center py-3 text-sm font-bold uppercase tracking-wider"
               size="lg"
             >
-              Sign In <ArrowRight className="w-4 h-4" />
+              {cooldown > 0 ? `Wait ${cooldown}s...` : <>Sign In <ArrowRight className="w-4 h-4" /></>}
             </Button>
           </form>
 
@@ -146,7 +193,7 @@ export default function LoginPage() {
         {/* Security badge */}
         <div className="mt-6 text-center flex items-center justify-center gap-1.5 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-brand-500" />
-          <span>Protected with secure Supabase authentication & SSL</span>
+          <span>Protected with adaptive rate limiting & SSL encryption</span>
         </div>
 
       </div>

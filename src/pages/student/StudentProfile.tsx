@@ -1,12 +1,14 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { User, Phone, Star, Link as LinkIcon, Save, Sparkles, CheckCircle2 } from 'lucide-react';
+import { User, Phone, Star, Link as LinkIcon, Save, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getStudentProfile, upsertStudentProfile, getDepartments } from '../../services/api';
+import { getStudentProfile, upsertStudentProfile, getDepartments, uploadResumeFile } from '../../services/api';
 import { StudentProfile, Department } from '../../lib/supabase';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card, { CardHeader } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input, { Textarea, Select } from '../../components/ui/Input';
+import FileUpload from '../../components/ui/FileUpload';
+import { validateStudentProfileInput } from '../../lib/security/validation';
 
 export default function StudentProfilePage() {
   const { user } = useAuth();
@@ -16,6 +18,8 @@ export default function StudentProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -32,10 +36,10 @@ export default function StudentProfilePage() {
     e.preventDefault();
     if (!user) return;
     setError('');
-    setSaving(true);
+    setFieldErrors({});
 
-    const { error: err } = await upsertStudentProfile({
-      user_id: user.id,
+    // 1. Client-Side Strict Validation
+    const validation = validateStudentProfileInput({
       full_name: profile.full_name ?? '',
       phone: profile.phone ?? '',
       department_id: profile.department_id ?? null,
@@ -44,10 +48,45 @@ export default function StudentProfilePage() {
       resume_url: profile.resume_url ?? '',
     });
 
+    if (!validation.isValid) {
+      setError(validation.error ?? 'Please correct the highlighted fields.');
+      setFieldErrors(validation.fieldErrors ?? {});
+      return;
+    }
+
+    setSaving(true);
+
+    let finalResumeUrl = profile.resume_url ?? '';
+
+    // 2. Upload pending validated file if selected
+    if (pendingUploadFile) {
+      const uploadRes = await uploadResumeFile(pendingUploadFile, user.id);
+      if (uploadRes.error) {
+        setSaving(false);
+        setError(uploadRes.error.message);
+        return;
+      }
+      if (uploadRes.publicUrl) {
+        finalResumeUrl = uploadRes.publicUrl;
+      }
+    }
+
+    const { error: err } = await upsertStudentProfile({
+      user_id: user.id,
+      full_name: profile.full_name ?? '',
+      phone: profile.phone ?? '',
+      department_id: profile.department_id ?? null,
+      skills: profile.skills ?? '',
+      cgpa: Number(profile.cgpa ?? 0),
+      resume_url: finalResumeUrl,
+    });
+
     setSaving(false);
     if (err) {
-      setError('Failed to save profile. Please verify your information and try again.');
+      setError(err.message ?? 'Failed to save profile. Please try again.');
     } else {
+      setProfile(prev => ({ ...prev, resume_url: finalResumeUrl }));
+      setPendingUploadFile(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     }
@@ -90,43 +129,63 @@ export default function StudentProfilePage() {
               subtitle="Core details displayed on your recruiter application card"
             />
             <div className="grid sm:grid-cols-2 gap-4">
-              <Input
-                label="Full Name"
-                placeholder="e.g. Alex Morgan"
-                value={profile.full_name ?? ''}
-                onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
-                icon={<User className="w-4 h-4" />}
-                required
-              />
-              <Input
-                label="Contact Phone"
-                type="tel"
-                placeholder="+1 555 019 2834"
-                value={profile.phone ?? ''}
-                onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
-                icon={<Phone className="w-4 h-4" />}
-              />
-              <Select
-                label="Academic Department / Major"
-                value={profile.department_id ?? ''}
-                onChange={e => setProfile(p => ({ ...p, department_id: Number(e.target.value) || null }))}
-                options={departments.map(d => ({
-                  value: d.id,
-                  label: `${d.name}${(d as any).institutions?.name ? ` — ${(d as any).institutions.name}` : ''}`,
-                }))}
-                placeholder="Select your department..."
-              />
-              <Input
-                label="CGPA / Cumulative Grade"
-                type="number"
-                min="0"
-                max="10"
-                step="0.01"
-                placeholder="8.75"
-                value={profile.cgpa ?? ''}
-                onChange={e => setProfile(p => ({ ...p, cgpa: Number(e.target.value) }))}
-                icon={<Star className="w-4 h-4" />}
-              />
+              <div>
+                <Input
+                  label="Full Name *"
+                  placeholder="e.g. Alex Morgan"
+                  value={profile.full_name ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
+                  icon={<User className="w-4 h-4" />}
+                  required
+                />
+                {fieldErrors.full_name && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.full_name}</p>
+                )}
+              </div>
+
+              <div>
+                <Input
+                  label="Contact Phone"
+                  type="tel"
+                  placeholder="+1 555 019 2834"
+                  value={profile.phone ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
+                  icon={<Phone className="w-4 h-4" />}
+                />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.phone}</p>
+                )}
+              </div>
+
+              <div>
+                <Select
+                  label="Academic Department / Major"
+                  value={profile.department_id ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, department_id: Number(e.target.value) || null }))}
+                  options={departments.map(d => ({
+                    value: d.id,
+                    label: `${d.name}${(d as any).institutions?.name ? ` — ${(d as any).institutions.name}` : ''}`,
+                  }))}
+                  placeholder="Select your department..."
+                />
+              </div>
+
+              <div>
+                <Input
+                  label="CGPA / Cumulative Grade (0.00 - 10.00)"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.01"
+                  placeholder="8.75"
+                  value={profile.cgpa ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, cgpa: Number(e.target.value) }))}
+                  icon={<Star className="w-4 h-4" />}
+                />
+                {fieldErrors.cgpa && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.cgpa}</p>
+                )}
+              </div>
             </div>
           </Card>
 
@@ -143,6 +202,9 @@ export default function StudentProfilePage() {
               rows={3}
               hint="Enter skills separated with commas. These are parsed for recruiter keyword matching."
             />
+            {fieldErrors.skills && (
+              <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.skills}</p>
+            )}
 
             {/* Live resume score widget */}
             <div className="mt-5 p-4 bg-brand-50/60 rounded-2xl border border-brand-200/80">
@@ -166,26 +228,48 @@ export default function StudentProfilePage() {
             </div>
           </Card>
 
-          {/* Resume Link */}
+          {/* Secure Resume File Upload & Link */}
           <Card>
             <CardHeader
-              title="Online Portfolio & Resume"
-              subtitle="Public link to your resume document (Google Drive, Dropbox, Notion, or PDF link)"
+              title="Resume Document & Portfolio"
+              subtitle="Upload your verified resume PDF/DOCX or link your public online portfolio"
             />
-            <Input
-              label="Public Resume Link"
-              type="url"
-              placeholder="https://drive.google.com/file/d/... or https://portfolio.dev"
-              value={profile.resume_url ?? ''}
-              onChange={e => setProfile(p => ({ ...p, resume_url: e.target.value }))}
-              icon={<LinkIcon className="w-4 h-4" />}
-              hint="Ensure permissions are set to 'Anyone with the link can view'."
-            />
+            <div className="space-y-4">
+              {user && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Direct Resume Upload (Secure Storage)
+                  </label>
+                  <FileUpload
+                    userId={user.id}
+                    currentUrl={profile.resume_url}
+                    onFileValidated={(file) => setPendingUploadFile(file)}
+                    onRemoveCurrent={() => setProfile(p => ({ ...p, resume_url: '' }))}
+                  />
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-slate-100">
+                <Input
+                  label="Or Public Portfolio / Resume URL"
+                  type="url"
+                  placeholder="https://drive.google.com/file/d/... or https://portfolio.dev"
+                  value={profile.resume_url ?? ''}
+                  onChange={e => setProfile(p => ({ ...p, resume_url: e.target.value }))}
+                  icon={<LinkIcon className="w-4 h-4" />}
+                  hint="Strictly validated HTTP/HTTPS URL. Ensure access permissions are enabled."
+                />
+                {fieldErrors.resume_url && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.resume_url}</p>
+                )}
+              </div>
+            </div>
           </Card>
 
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
-              {error}
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 

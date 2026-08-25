@@ -1,8 +1,9 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { Users, ChevronDown, ChevronRight, ExternalLink, MessageSquare, Star } from 'lucide-react';
+import { Users, ChevronDown, ChevronRight, ExternalLink, MessageSquare, Star, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getJobsByRecruiter, getJobApplications, updateApplicationStatus, createFeedback } from '../../services/api';
 import { Job, Application, ApplicationStatus } from '../../lib/supabase';
+import { validateFeedbackInput } from '../../lib/security/validation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
 import Badge, { applicationStatusBadge } from '../../components/ui/Badge';
@@ -55,8 +56,21 @@ export default function ApplicantsList() {
     e.preventDefault();
     if (!user || !feedbackApp) return;
     setFeedbackError('');
-    setSavingFeedback(true);
 
+    const validation = validateFeedbackInput({
+      from_user_id: user.id,
+      to_entity_id: feedbackApp.id,
+      type: 'APPLICATION',
+      content: feedbackContent,
+      comments: feedbackComments,
+    });
+
+    if (!validation.isValid) {
+      setFeedbackError(validation.error ?? 'Please provide valid feedback assessment text.');
+      return;
+    }
+
+    setSavingFeedback(true);
     const { error } = await createFeedback({
       from_user_id: user.id,
       to_entity_id: feedbackApp.id,
@@ -67,7 +81,7 @@ export default function ApplicantsList() {
 
     setSavingFeedback(false);
     if (error) {
-      setFeedbackError('Failed to save feedback.');
+      setFeedbackError(error.message ?? 'Failed to save feedback.');
     } else {
       setFeedbackApp(null);
       setFeedbackContent('');
@@ -230,11 +244,12 @@ export default function ApplicantsList() {
       >
         <form onSubmit={handleFeedbackSubmit} className="space-y-4">
           <Textarea
-            label="Candidate Performance & Review"
+            label="Candidate Performance & Review *"
             placeholder="Share feedback on technical skills, interview performance, and suitability for the role..."
             value={feedbackContent}
             onChange={e => setFeedbackContent(e.target.value)}
             rows={4}
+            required
           />
           <Textarea
             label="Additional Notes / Next Steps"
@@ -244,8 +259,9 @@ export default function ApplicantsList() {
             rows={3}
           />
           {feedbackError && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
-              {feedbackError}
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{feedbackError}</span>
             </div>
           )}
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">

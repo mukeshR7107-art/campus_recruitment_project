@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Search, MapPin, DollarSign, Building2, Clock, ExternalLink, CheckCircle2, Sparkles, Send } from 'lucide-react';
+import { Search, MapPin, DollarSign, Building2, Clock, ExternalLink, CheckCircle2, Sparkles, Send, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getJobs, applyForJob, checkExistingApplication, getStudentProfile } from '../../services/api';
 import { Job, StudentProfile } from '../../lib/supabase';
+import { validateApplicationInput } from '../../lib/security/validation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -46,13 +47,17 @@ export default function JobListings() {
   }, [user]);
 
   useEffect(() => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
+    if (!q) {
+      setFiltered(jobs);
+      return;
+    }
     setFiltered(
       jobs.filter(j => {
         const matchesSearch = 
           j.title.toLowerCase().includes(q) ||
-          j.location.toLowerCase().includes(q) ||
-          j.description.toLowerCase().includes(q) ||
+          (j.location ?? '').toLowerCase().includes(q) ||
+          (j.description ?? '').toLowerCase().includes(q) ||
           (j.requirements ?? '').toLowerCase().includes(q);
         
         return matchesSearch;
@@ -63,8 +68,21 @@ export default function JobListings() {
   async function handleApply() {
     if (!user || !selectedJob) return;
     setApplyError('');
-    setApplying(true);
 
+    // Client-side schema validation
+    const validation = validateApplicationInput({
+      student_id: user.id,
+      job_id: selectedJob.id,
+      resume_path: studentProfile?.resume_url ?? '',
+      cover_letter: coverLetter,
+    });
+
+    if (!validation.isValid) {
+      setApplyError(validation.error ?? 'Invalid application input.');
+      return;
+    }
+
+    setApplying(true);
     const { error } = await applyForJob({
       student_id: user.id,
       job_id: selectedJob.id,
@@ -74,7 +92,7 @@ export default function JobListings() {
 
     setApplying(false);
     if (error) {
-      setApplyError((error as any).message ?? 'Application failed. You may have already applied.');
+      setApplyError(error.message ?? 'Application failed. You may have already applied.');
     } else {
       setAppliedIds(prev => new Set([...prev, selectedJob.id]));
       setApplySuccess('Application submitted successfully!');
@@ -268,7 +286,7 @@ export default function JobListings() {
             {!appliedIds.has(selectedJob.id) && (
               <div>
                 <Textarea
-                  label="Cover Letter / Note to Recruiter (Optional)"
+                  label="Cover Letter / Note to Recruiter (Optional, max 3000 chars)"
                   placeholder="Introduce yourself and explain why you're a standout candidate for this role..."
                   value={coverLetter}
                   onChange={e => setCoverLetter(e.target.value)}
@@ -278,8 +296,9 @@ export default function JobListings() {
             )}
 
             {applyError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">
-                {applyError}
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{applyError}</span>
               </div>
             )}
             {applySuccess && (

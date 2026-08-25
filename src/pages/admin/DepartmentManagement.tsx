@@ -1,7 +1,8 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { Building2, Plus, Search, GraduationCap } from 'lucide-react';
+import { Building2, Plus, Search, GraduationCap, AlertTriangle } from 'lucide-react';
 import { getDepartments, createDepartment, getInstitutions } from '../../services/api';
 import { Department, Institution } from '../../lib/supabase';
+import { validateDepartmentInput } from '../../lib/security/validation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -31,7 +32,7 @@ export default function DepartmentManagement() {
   useEffect(() => { loadData(); }, []);
 
   useEffect(() => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     setFiltered(departments.filter(d =>
       d.name.toLowerCase().includes(q) ||
       ((d as any).institutions?.name ?? '').toLowerCase().includes(q)
@@ -40,18 +41,28 @@ export default function DepartmentManagement() {
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
-    if (!form.name.trim() || !form.institution_id) {
-      setError('Department name and institution are required.');
+    setError('');
+
+    const validation = validateDepartmentInput({
+      name: form.name,
+      institution_id: form.institution_id,
+    });
+
+    if (!validation.isValid) {
+      setError(validation.error ?? 'Please provide valid department details.');
       return;
     }
-    setError('');
+
     setSaving(true);
     const { error: err } = await createDepartment({
       name: form.name,
       institution_id: Number(form.institution_id),
     });
     setSaving(false);
-    if (err) { setError('Failed to create department.'); return; }
+    if (err) {
+      setError(err.message ?? 'Failed to create department.');
+      return;
+    }
     setModalOpen(false);
     setForm({ name: '', institution_id: '' });
     loadData();
@@ -156,7 +167,10 @@ export default function DepartmentManagement() {
             required
           />
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl">{error}</div>
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
           )}
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
             <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
