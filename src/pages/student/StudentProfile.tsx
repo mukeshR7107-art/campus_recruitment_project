@@ -1,3 +1,4 @@
+import { profileCompleteness } from '../../lib/profileCompleteness';
 import { useEffect, useState, FormEvent } from 'react';
 import { User, Phone, Star, Link as LinkIcon, Save, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +28,7 @@ export default function StudentProfilePage() {
       getStudentProfile(user.id),
       getDepartments(),
     ]).then(([p, d]) => {
+      if (p.error || d.error) setError(p.error?.message || d.error?.message || 'Unable to load profile.');
       if (p.data) setProfile(p.data);
       setDepartments((d.data ?? []) as Department[]);
     }).finally(() => setLoading(false));
@@ -92,12 +94,7 @@ export default function StudentProfilePage() {
     }
   }
 
-  const scoreSkills = (skills: string) => {
-    const count = skills.split(',').filter(s => s.trim()).length;
-    return Math.min(100, count * 8 + 20);
-  };
-
-  const estimatedScore = scoreSkills(profile.skills ?? '');
+  const estimatedScore = profileCompleteness(profile);
 
   if (loading) {
     return (
@@ -112,7 +109,7 @@ export default function StudentProfilePage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl space-y-8">
-        
+
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Student Candidate Profile</h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">
@@ -121,7 +118,7 @@ export default function StudentProfilePage() {
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
-          
+
           {/* Personal Info */}
           <Card>
             <CardHeader
@@ -210,7 +207,7 @@ export default function StudentProfilePage() {
             <div className="mt-5 p-4 bg-brand-50/60 rounded-2xl border border-brand-200/80">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-800 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-brand-600" /> Automated Resume Score
+                  <Sparkles className="w-4 h-4 text-brand-600" /> Profile completeness
                 </span>
                 <span className="text-lg font-extrabold text-brand-700">{estimatedScore}/100</span>
               </div>
@@ -221,9 +218,7 @@ export default function StudentProfilePage() {
                 />
               </div>
               <p className="text-xs text-brand-700 mt-2 font-medium">
-                {estimatedScore >= 80 ? '🌟 Outstanding profile readiness! Recruiters will prioritize your profile.' :
-                 estimatedScore >= 60 ? '✨ Good candidate profile. Consider adding a few more specific tools.' :
-                 '💡 Add more technical skills and frameworks to optimize your matching score.'}
+                Complete your contact, academic, skills, and resume details. This is a checklist, not an assessment of your resume or hiring chances.
               </p>
             </div>
           </Card>

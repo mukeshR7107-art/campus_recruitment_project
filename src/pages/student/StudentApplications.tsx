@@ -41,11 +41,13 @@ export default function StudentApplications() {
   const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [filter, setFilter] = useState<string>('ALL');
 
   useEffect(() => {
     if (!user) return;
-    getStudentApplications(user.id).then(({ data }) => {
+    getStudentApplications(user.id).then(({ data, error }) => {
+      if (error) setLoadError(error.message || 'Unable to load applications.');
       setApplications((data ?? []) as Application[]);
     }).finally(() => setLoading(false));
   }, [user]);
@@ -71,6 +73,7 @@ export default function StudentApplications() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {loadError && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{loadError}</p>}
         
         {/* Title Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

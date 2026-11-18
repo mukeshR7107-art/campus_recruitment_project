@@ -11,10 +11,12 @@ export default function StudentFeedback() {
   const { user } = useAuth();
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (!user) return;
-    getStudentFeedback(user.id).then(({ data }) => {
+    getStudentFeedback(user.id).then(({ data, error }) => {
+      if (error) setLoadError(error.message || 'Unable to load feedback.');
       setFeedbackList((data ?? []) as Feedback[]);
     }).finally(() => setLoading(false));
   }, [user]);
@@ -32,6 +34,7 @@ export default function StudentFeedback() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {loadError && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{loadError}</p>}
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Recruiter Feedback & Evaluations</h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">

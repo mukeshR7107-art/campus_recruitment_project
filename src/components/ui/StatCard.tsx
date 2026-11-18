@@ -19,7 +19,7 @@ const colorClasses = {
 
 export default function StatCard({ title, value, icon, trend, color = 'brand' }: StatCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-card hover:shadow-card-hover transition-all duration-200 p-6">
+    <div className="portal-card rounded-2xl hover:shadow-card-hover transition-all duration-200 p-6">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-slate-500 font-semibold">{title}</p>

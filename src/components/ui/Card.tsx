@@ -9,7 +9,7 @@ interface CardProps {
 
 export default function Card({ children, className = '', padding = true, hoverEffect = false }: CardProps) {
   return (
-    <div className={`bg-white rounded-2xl border border-slate-200/80 shadow-card transition-all duration-200 ${hoverEffect ? 'hover:shadow-card-hover hover:border-slate-300' : ''} ${padding ? 'p-6' : ''} ${className}`}>
+    <div className={`portal-card rounded-2xl transition-all duration-200 ${hoverEffect ? 'hover:shadow-card-hover hover:border-slate-300' : ''} ${padding ? 'p-6' : ''} ${className}`}>
       {children}
     </div>
   );

@@ -119,7 +119,7 @@ export default function RegisterPage() {
             Create Your Account
           </h2>
           <p className="text-slate-400 text-sm mt-2">
-            Join thousands of students and recruiters on the campus network.
+            Connect with students and recruiters in your campus community.
           </p>
         </div>
 
@@ -209,6 +209,7 @@ export default function RegisterPage() {
                   />
                   <button
                     type="button"
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPw(v => !v)}
                     className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                   >
@@ -290,7 +291,7 @@ export default function RegisterPage() {
 
         <div className="mt-6 text-center flex items-center justify-center gap-1.5 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-brand-500" />
-          <span>Strict password complexity & role authorization enforced</span>
+          <span>Your next chapter starts with your campus community</span>
         </div>
 
       </div>

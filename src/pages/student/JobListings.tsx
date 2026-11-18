@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, MapPin, DollarSign, Building2, Clock, ExternalLink, CheckCircle2, Sparkles, Send, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getJobs, applyForJob, checkExistingApplication, getStudentProfile } from '../../services/api';
+import { getJobs, applyForJob, getStudentApplications, getStudentProfile } from '../../services/api';
 import { Job, StudentProfile } from '../../lib/supabase';
 import { validateApplicationInput } from '../../lib/security/validation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -30,19 +30,15 @@ export default function JobListings() {
     Promise.all([
       getJobs('OPEN'),
       getStudentProfile(user.id),
-    ]).then(async ([j, p]) => {
+      getStudentApplications(user.id),
+    ]).then(([j, p, applications]) => {
+      if (j.error || p.error || applications.error) setApplyError(j.error?.message || p.error?.message || applications.error?.message || 'Unable to load opportunities.');
       const jobList = (j.data ?? []) as Job[];
       setJobs(jobList);
       setFiltered(jobList);
       setStudentProfile(p.data ?? null);
 
-      // Check which jobs already applied
-      const checks = await Promise.all(
-        jobList.map(job => checkExistingApplication(user.id, job.id))
-      );
-      const ids = new Set<number>();
-      checks.forEach((c, i) => { if (c.data) ids.add(jobList[i].id); });
-      setAppliedIds(ids);
+      setAppliedIds(new Set((applications.data ?? []).map(app => app.job_id)));
     }).finally(() => setLoading(false));
   }, [user]);
 
@@ -54,12 +50,13 @@ export default function JobListings() {
     }
     setFiltered(
       jobs.filter(j => {
-        const matchesSearch = 
+        const matchesSearch =
           j.title.toLowerCase().includes(q) ||
+          (j.recruiter_profiles?.company_name ?? '').toLowerCase().includes(q) ||
           (j.location ?? '').toLowerCase().includes(q) ||
           (j.description ?? '').toLowerCase().includes(q) ||
           (j.requirements ?? '').toLowerCase().includes(q);
-        
+
         return matchesSearch;
       })
     );
@@ -117,7 +114,8 @@ export default function JobListings() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        
+        {applyError && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{applyError}</p>}
+
         {/* Header Title Banner */}
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl border border-slate-700/60">
           <div className="relative z-10 max-w-2xl">

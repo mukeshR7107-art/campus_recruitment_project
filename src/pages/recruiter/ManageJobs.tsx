@@ -97,7 +97,8 @@ export default function ManageJobs() {
   async function handleDelete() {
     if (!deleteConfirm) return;
     setDeleting(true);
-    await deleteJob(deleteConfirm.id);
+    const { error: deleteError } = await deleteJob(deleteConfirm.id);
+    if (deleteError) { setError(deleteError.message ?? 'Unable to delete job.'); setDeleting(false); return; }
     setDeleting(false);
     setDeleteConfirm(null);
     loadJobs();
@@ -105,7 +106,8 @@ export default function ManageJobs() {
 
   async function toggleStatus(job: Job) {
     const newStatus = job.status === 'OPEN' ? 'CLOSED' : 'OPEN';
-    await updateJob(job.id, { status: newStatus });
+    const { error: updateError } = await updateJob(job.id, { status: newStatus });
+    if (updateError) { setError(updateError.message ?? 'Unable to update job.'); return; }
     loadJobs();
   }
 
@@ -122,6 +124,7 @@ export default function ManageJobs() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {error && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
         
         {/* Header bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -235,7 +235,10 @@ export async function createJob(data: Omit<Job, 'id' | 'created_at' | 'updated_a
 }
 
 export async function updateJob(id: number, data: Partial<Job>) {
-  const validation = validateJobInput(data);
+  const statusOnly = Object.keys(data).length === 1 && (data.status === 'OPEN' || data.status === 'CLOSED');
+  const validation = statusOnly
+    ? { isValid: true, sanitizedValue: { status: data.status }, error: undefined }
+    : validateJobInput(data);
   if (!validation.isValid) {
     return { data: null, error: { message: validation.error } };
   }
@@ -253,6 +256,7 @@ export async function updateJob(id: number, data: Partial<Job>) {
       .maybeSingle();
 
     if (error) throw error;
+    if (!result) throw new Error('Job could not be updated. Check your permissions.');
     return { data: result, error: null };
   } catch (err) {
     return { data: null, error: sanitizeError(err) };
@@ -412,7 +416,7 @@ export async function getFeedbackForApplication(applicationId: number) {
   try {
     const { data, error } = await supabase
       .from('feedback')
-      .select('*, profiles!feedback_from_user_id_fkey(email)')
+      .select('*')
       .eq('to_entity_id', applicationId)
       .eq('type', 'APPLICATION')
       .order('created_at', { ascending: false });
@@ -437,7 +441,7 @@ export async function getStudentFeedback(studentId: string) {
     const appIds = apps.map(a => a.id);
     const { data, error } = await supabase
       .from('feedback')
-      .select('*, profiles!feedback_from_user_id_fkey(email)')
+      .select('*')
       .in('to_entity_id', appIds)
       .eq('type', 'APPLICATION')
       .order('created_at', { ascending: false });

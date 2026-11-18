@@ -151,6 +151,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(v => !v)}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                   disabled={loading || cooldown > 0}
@@ -193,7 +194,7 @@ export default function LoginPage() {
         {/* Security badge */}
         <div className="mt-6 text-center flex items-center justify-center gap-1.5 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-brand-500" />
-          <span>Protected with adaptive rate limiting & SSL encryption</span>
+          <span>Sign in securely to your campus workspace</span>
         </div>
 
       </div>

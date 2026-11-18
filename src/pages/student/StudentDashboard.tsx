@@ -1,3 +1,4 @@
+import { profileCompleteness } from '../../lib/profileCompleteness';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, FileText, User, ArrowRight, TrendingUp, Clock, Sparkles, Award, MessageSquare } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function StudentDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -24,6 +26,7 @@ export default function StudentDashboard() {
       getStudentApplications(user.id),
       getJobs('OPEN'),
     ]).then(([p, a, j]) => {
+      if (p.error || a.error || j.error) setLoadError(p.error?.message || a.error?.message || j.error?.message || 'Unable to load dashboard.');
       setProfile(p.data ?? null);
       setApplications((a.data ?? []) as Application[]);
       setJobs((j.data ?? []) as Job[]);
@@ -35,7 +38,7 @@ export default function StudentDashboard() {
     return acc;
   }, {});
 
-  const resumeScore = profile?.resume_score ?? 0;
+  const resumeScore = profileCompleteness(profile);
   const completedFields = [
     !!profile?.full_name,
     !!profile?.phone,
@@ -58,7 +61,8 @@ export default function StudentDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        
+        {loadError && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{loadError}</p>}
+
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl border border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="relative z-10 max-w-xl">
@@ -69,7 +73,7 @@ export default function StudentDashboard() {
               Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}! 👋
             </h1>
             <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-              Track your campus applications, discover recommended job openings, and review recruiter feedback.
+              Track your campus applications, discover open job listings, and review recruiter feedback.
             </p>
           </div>
 
@@ -112,12 +116,12 @@ export default function StudentDashboard() {
             value={`${resumeScore}/100`}
             icon={<Award className="w-5 h-5" />}
             color="purple"
-            trend={resumeScore >= 70 ? 'Strong profile' : 'Optimize profile'}
+            trend={resumeScore >= 70 ? 'Nearly complete' : 'Complete your details'}
           />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          
+
           {/* Recent Applications List */}
           <div className="lg:col-span-2">
             <Card>
@@ -183,7 +187,7 @@ export default function StudentDashboard() {
                     </span>
                   </div>
                 ))}
-                
+
                 <div className="pt-3">
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div

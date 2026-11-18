@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error(passwordRes.error!), emailConfirmationRequired: false };
     }
 
+    if (role === 'ADMIN') return { error: new Error('Administrator accounts require an existing administrator.'), emailConfirmationRequired: false };
     const roleRes = validateRole(role);
     if (!roleRes.isValid) {
       return { error: new Error(roleRes.error!), emailConfirmationRequired: false };

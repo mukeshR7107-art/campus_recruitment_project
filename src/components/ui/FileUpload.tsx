@@ -1,3 +1,4 @@
+import ResumeLink from './ResumeLink';
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import { UploadCloud, FileText, CheckCircle2, AlertTriangle, X, ShieldCheck } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security/fileUploadSecurity';
@@ -5,7 +6,7 @@ import { SECURITY_CONFIG } from '../../lib/security/securityConfig';
 
 interface FileUploadProps {
   userId: string;
-  onFileValidated: (file: File, validation: { storagePath: string; sanitizedFilename: string }) => void;
+  onFileValidated: (file: File | null, validation: { storagePath: string; sanitizedFilename: string }) => void;
   currentUrl?: string;
   onRemoveCurrent?: () => void;
   disabled?: boolean;
@@ -29,6 +30,7 @@ export default function FileUpload({
 
   async function handleFile(file: File) {
     setError(null);
+    onFileValidated(null, { storagePath: '', sanitizedFilename: '' });
     setValidating(true);
 
     try {
@@ -70,6 +72,7 @@ export default function FileUpload({
   }
 
   function clearSelected() {
+    onFileValidated(null, { storagePath: '', sanitizedFilename: '' });
     setSelectedFile(null);
     setVerifiedType(null);
     setError(null);
@@ -98,14 +101,12 @@ export default function FileUpload({
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-brand-900 truncate">Current Resume Document</p>
-              <a
-                href={currentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <ResumeLink
+                value={currentUrl}
                 className="text-[11px] text-brand-600 hover:text-brand-700 font-semibold hover:underline truncate block"
               >
                 View Uploaded Resume
-              </a>
+              </ResumeLink>
             </div>
           </div>
           {onRemoveCurrent && (

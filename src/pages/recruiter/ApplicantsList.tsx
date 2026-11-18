@@ -1,3 +1,4 @@
+import ResumeLink from '../../components/ui/ResumeLink';
 import { useEffect, useState, FormEvent } from 'react';
 import { Users, ChevronDown, ChevronRight, ExternalLink, MessageSquare, Star, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -48,7 +49,8 @@ export default function ApplicantsList() {
   }
 
   async function handleStatusChange(app: Application, status: ApplicationStatus) {
-    await updateApplicationStatus(app.id, status);
+    const { data, error } = await updateApplicationStatus(app.id, status);
+    if (error || !data) { setFeedbackError(error?.message || 'Application status could not be updated.'); return; }
     setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status } : a));
   }
 
@@ -104,6 +106,7 @@ export default function ApplicantsList() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {feedbackError && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{feedbackError}</p>}
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Applicant Pipeline & Candidate Review</h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">Select a campus posting below to evaluate applicant profiles and manage hiring stages.</p>
@@ -180,16 +183,14 @@ export default function ApplicantsList() {
                                     {sp?.skills && (
                                       <p className="text-xs text-slate-500 mb-2 truncate font-medium">{sp.skills}</p>
                                     )}
-                                    {sp?.resume_url && (
-                                      <a
-                                        href={sp.resume_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    {(app.resume_path || sp?.resume_url) && (
+                                      <ResumeLink
+                                        value={app.resume_path || sp.resume_url}
                                         className="inline-flex items-center gap-1 text-xs text-brand-600 font-bold hover:underline mb-2"
                                       >
                                         <ExternalLink className="w-3.5 h-3.5" />
                                         Open Resume Link
-                                      </a>
+                                      </ResumeLink>
                                     )}
                                     {app.cover_letter && (
                                       <p className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-100 mt-1">
