@@ -1,5 +1,17 @@
 # Campus Recruitment System review
 
+## Live verification update — 19 November 2026
+
+- GitHub main contains redesign commit `61224f02573649c6e7293c17c93cb2c02c966c96`.
+- Supabase project `nrfsazthoxmigjzwyxpf`: private resume bucket and recruitment security migration applied successfully. Fixed a nested block-comment token that prevented the older storage migration from parsing.
+- Database transaction tests passed for signup ADMIN rejection, self-promotion denial, application to an open job, closed-job rejection, self-hire denial, profile/resume isolation, recruiter status changes, immutable submissions, feedback ownership and student feedback visibility. Test accounts, records and storage metadata were rolled back.
+- These are database authorization tests, not full browser login/upload/download tests. Email delivery and actual Storage HTTP uploads/signed downloads still need end-to-end verification.
+- Security advisors now report two warnings: the intentional authenticated `is_admin()` helper (returns only the caller's admin status), and disabled leaked-password protection. Anonymous function execution and signup-trigger execution have been revoked.
+- The live database has zero ADMIN accounts. The admin screens cannot currently be used until the campus owner designates an existing account for trusted administrator provisioning. No account was promoted automatically.
+- Vercel team access approval is pending. Deployment state is not yet verified through Vercel.
+
+The dated implementation audit below records the earlier state; this update supersedes its migration-pending statements.
+
 Reviewed 18 November 2026. This is an implementation audit with public-page browser checks, not a certification that every production feature works. Authenticated tests and live database migration verification require the owner’s signed-in test sessions.
 
 ## Delivered changes

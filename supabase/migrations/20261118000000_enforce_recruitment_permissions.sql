@@ -44,4 +44,7 @@ WITH CHECK (from_user_id = auth.uid() AND (public.is_admin() OR
   (type = 'APPLICATION' AND EXISTS (SELECT 1 FROM public.applications a JOIN public.jobs j ON j.id = a.job_id
     WHERE a.id = to_entity_id AND j.recruiter_id = auth.uid()))));
 DROP POLICY IF EXISTS "Authors can update own feedback" ON public.feedback;
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 COMMIT;

@@ -4,7 +4,7 @@
   1. Storage Security
      - Provisions isolated 'resumes' bucket (public = false)
      - Implements RLS on storage.objects:
-       - Students can only upload, update, and delete their own files in `resumes/{auth.uid()}/*`
+       - Students can only upload, update, and delete their own files in the resumes bucket under each user ID
        - Recruiters and Admins can view/download resumes of applicants
        - Denies arbitrary execution or public anonymous uploads
 
