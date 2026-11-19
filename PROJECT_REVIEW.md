@@ -8,7 +8,7 @@
 - These are database authorization tests, not full browser login/upload/download tests. Email delivery and actual Storage HTTP uploads/signed downloads still need end-to-end verification.
 - Security advisors now report two warnings: the intentional authenticated `is_admin()` helper (returns only the caller's admin status), and disabled leaked-password protection. Anonymous function execution and signup-trigger execution have been revoked.
 - The live database has zero ADMIN accounts. The admin screens cannot currently be used until the campus owner designates an existing account for trusted administrator provisioning. No account was promoted automatically.
-- Vercel team access approval is pending. Deployment state is not yet verified through Vercel.
+- GitHub follow-up commit `00ade1b1380be72306ec25ff7d42135179b57326` deployed successfully to production. Vercel deployment `dpl_5heAE84g2RhuNUAM5MHs12d5PAXK` is READY (Vite, about 10.4 seconds building), with the original domain assigned: https://campus-recruitment-project-l7h1.vercel.app/ . Public HTTP returns 200 with the configured CSP, and the redesigned homepage was visually verified on that live domain.
 
 The dated implementation audit below records the earlier state; this update supersedes its migration-pending statements.
 
